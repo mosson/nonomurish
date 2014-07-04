@@ -1,0 +1,77 @@
+#!/bin/bash 
+### BEGIN INIT INFO
+#
+# Provides :        resque
+# Required-Start :  $syslog
+# Required-Stop  :  $syslog
+# Should-Start:	    $local_fs
+# Should-Stop:      $local_fs
+# Default-Start     : 2 3 4 5
+# Default-Stop      : 0 1 6
+# Short-Description : Resque worker via init.d (assumes you have Ruby, and a plugin to allow wildcards in queue names)
+# Description : see Short-Description, brah
+#
+### END INIT INFO
+
+PROG="<%= rake_path %>"
+NICE_NAME="resque"
+USER="<%= resque_user %>"
+PROG_PATH="<%= current_path %>"
+PROG_ARGS="RAILS_ENV=<%= rails_env %> resque:work QUEUE='*' PIDFILE=<%= resque_pid %> BACKGROUND=yes"
+PID_FILE="<%= resque_pid %>"
+
+start() {
+    if [ -e "$PID_FILE" ]; then
+        echo "Error! Resque worker is currently running, or the pid file is stale! Sorry it didn't work out, brah." 1>&2
+        exit 1
+    else
+        su $USER -c "cd $PROG_PATH && $PROG $PROG_ARGS 2>&1 >/dev/null &" &
+				
+        echo "Hold on, brah - starting up that worker for you"
+
+	while [[ $WORKER_PID == "" ]]
+        do
+	  WORKER_PID=`ps a | grep "Waiting for" | ruby -e "puts STDIN.read.split(' ').first || ''"` 
+          sleep 1
+          echo -n "."
+        done
+
+	echo $WORKER_PID > "$PID_FILE"
+
+        echo "Resque worker started, brah! PID is $WORKER_PID, btw."
+    fi
+}
+
+stop() {
+    if [ -e "$PID_FILE" ]; then
+        pid=`cat "$PID_FILE"`
+        kill $pid > /dev/null 2>&1  # not using -9 so as not to have output
+        sleep 7 # I should really check if the PID is still up here...
+        rm "$PID_FILE"
+
+        echo " Resque worker stopped, brah!"
+    else
+        echo "Error! Resque worker is not running! C'mon, brah!" 1>&2
+        exit 1
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        exit 0
+    ;;
+    stop)
+        stop
+        exit 0
+    ;;
+    reload|restart|force-reload)
+        stop
+        start
+        exit 0
+    ;;
+    **)
+        echo "Yo, brah. Usage: $0 {start|stop|reload}" 1>&2
+        exit 1
+    ;;
+esac

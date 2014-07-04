@@ -1,0 +1,9 @@
+<%= "#{shared_path}/log/#{rails_env}.log" %> {
+  daily
+  missingok
+  rotate 60
+  dateext
+
+  compress
+  delaycompress
+}

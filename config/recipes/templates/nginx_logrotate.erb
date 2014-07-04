@@ -1,0 +1,33 @@
+<%= nginx_access_log %> {
+  daily
+  missingok
+  rotate 60
+  dateext
+
+  # 圧縮設定 (圧縮は次回のローテートまで遅らせる)
+  compress
+  delaycompress
+
+  # unicorn masterプロセスに、USR1シグナルを送る
+  lastaction
+    pid=<%= nginx_pid %>
+    test -s $pid && kill -USR1 "$(cat $pid)"
+  endscript
+}
+
+<%= nginx_error_log %> {
+  daily
+  missingok
+  rotate 60
+  dateext
+
+  # 圧縮設定 (圧縮は次回のローテートまで遅らせる)
+  compress
+  delaycompress
+
+  # unicorn masterプロセスに、USR1シグナルを送る
+  lastaction
+    pid=<%= nginx_pid %>
+    test -s $pid && kill -USR1 "$(cat $pid)"
+  endscript
+}

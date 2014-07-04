@@ -1,0 +1,74 @@
+# generate by capistrano
+
+upstream <%= application %> {
+  # 同一IPでラウンドロビンさせない
+  # ip_hash;
+
+  # 必要であればここにソケット/サーバーをする
+  server unix:/tmp/unicorn.<%= application %>.sock;
+}
+
+map $http_x_forwarded_for $allowed {
+  default deny;
+  <%= ENV["ADMIN_IP"] %> allow;
+}
+
+server {
+  listen       80 default;
+
+  client_max_body_size 16M;
+
+  send_timeout            600;
+  proxy_connect_timeout   600;
+  proxy_send_timeout      600;
+  proxy_read_timeout      600;
+
+  add_header Access-Control-Allow-Origin *;
+  add_header Access-Control-Allow-Methods GET;
+
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-Host $host;
+  proxy_set_header X-Forwarded-Server $host;
+
+  set $scm "";
+
+  if ($remote_addr = $proxy_add_x_forwarded_for) {
+    set $scm $scheme;
+  }
+
+  if ($remote_addr != $proxy_add_x_forwarded_for) {
+    set $scm $http_x_forwarded_proto;
+  }
+
+  proxy_set_header X-Forwarded-Proto $scm;
+
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+  charset utf-8;
+
+  root /var/www/rails/<%= application %>/current/public;
+
+  error_page 502 /502.html;
+  location = /502.html {
+      root  /var/www/rails/<%= application %>/current/public;
+  }
+
+  # Drop requests to non-rails requests
+  location ~ \.(aspx|asp|php|jsp|cgi)$ {
+    return 410;
+  }
+
+  location / {
+    try_files $uri @app;
+  }
+
+
+  location ~* ^/assets/.+.(jpg|jpeg|gif|css|png|js|ico)$ {
+    expires 1h;
+  }
+
+  location @app {
+    proxy_pass http://<%= application %>;
+  }
+}
