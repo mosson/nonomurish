@@ -8,11 +8,6 @@ upstream <%= application %> {
   server unix:/tmp/unicorn.<%= application %>.sock;
 }
 
-map $http_x_forwarded_for $allowed {
-  default deny;
-  <%= ENV["ADMIN_IP"] %> allow;
-}
-
 server {
   listen       80 default;
 
