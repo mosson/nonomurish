@@ -11,7 +11,7 @@ class TranslationsController < ApplicationController
 
     respond_to do |format|
       format.js
-      format.json{ render :json => {text: params[:text], translated: @text } }
+      format.json{ render :json => {text: @text} }
     end
   end
 end
